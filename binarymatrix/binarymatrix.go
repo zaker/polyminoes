@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
+	"strings"
 )
 
 type Unsigned interface {
@@ -13,6 +14,7 @@ type Unsigned interface {
 
 type BinaryMatrix[T Unsigned] struct {
 	Height, Width uint8
+	binarySize    uint8
 	data          []T
 }
 
@@ -37,9 +39,10 @@ func New[T Unsigned](Height, Width uint8) *BinaryMatrix[T] {
 	sizofBT := sizeOf(bt)
 
 	return &BinaryMatrix[T]{
-		Height: Height,
-		Width:  Width,
-		data:   make([]T, ((Height*Width)/(sizofBT))+1),
+		Height:     Height,
+		Width:      Width,
+		binarySize: sizofBT,
+		data:       make([]T, ((Height*Width)/(sizofBT))+1),
 	}
 }
 
@@ -49,16 +52,16 @@ func (bm *BinaryMatrix[T]) SetBytes(bs []byte) error {
 }
 
 func (bm *BinaryMatrix[T]) SetBit(x, y uint8, b bool) error {
-	if x > bm.Width {
+	if x >= bm.Width {
 		return fmt.Errorf("setting bit where x at %d is out of range [%d]", x, bm.Width)
 	}
-	if y > bm.Height {
+	if y >= bm.Height {
 		return fmt.Errorf("setting bit where y at %d is out of range [%d]", x, bm.Height)
 	}
-	sizeofBT := sizeOf(bm.data[0])
+
 	o := (y*bm.Width + x)
-	i := (int)(o / sizeofBT)
-	m := (T)(1 << (o % sizeofBT))
+	i := (int)(o / bm.binarySize)
+	m := (T)(1 << (o % bm.binarySize))
 
 	if b {
 		bm.data[i] |= m
@@ -69,11 +72,11 @@ func (bm *BinaryMatrix[T]) SetBit(x, y uint8, b bool) error {
 	return nil
 }
 
-func (bm *BinaryMatrix[T]) getBit(x, y uint8) bool {
-	sizeofBT := sizeOf(bm.data[0])
+func (bm *BinaryMatrix[T]) GetBit(x, y uint8) bool {
+
 	o := (y*bm.Width + x)
-	i := (int)(o / sizeofBT)
-	m := (T)(1 << (o % sizeofBT))
+	i := (int)(o / bm.binarySize)
+	m := (T)(1 << (o % bm.binarySize))
 	c := bm.data[i]&(m) > 0
 	return c
 }
@@ -82,19 +85,20 @@ func (bm *BinaryMatrix[T]) Less(cm *BinaryMatrix[T]) bool {
 	if len(bm.data) != len(cm.data) {
 		return false
 	}
-	for i := len(bm.data); i >= 0; i-- {
+	for i := len(bm.data) - 1; i >= 0; i-- {
 		if bm.data[i] < cm.data[i] {
 			return true
+		}
+
+		if bm.data[i] > cm.data[i] {
+			return false
 		}
 	}
 	return false
 }
 
 func castBTToBytes[T Unsigned](vals []T) []byte {
-	// length := len(ints) * int(sizofBT)
-	// hdr := reflect.SliceHeader{Data: uintptr(unsafe.Pointer(&ints[0])), Len: length, Cap: length}
-	// return *(*[]byte)(unsafe.Pointer(&hdr))
-	buf := new(bytes.Buffer)
+	buf := &bytes.Buffer{}
 	for _, v := range vals {
 		err := binary.Write(buf, binary.LittleEndian, v)
 		if err != nil {
@@ -106,9 +110,112 @@ func castBTToBytes[T Unsigned](vals []T) []byte {
 	return bytes.TrimRight(bs, "\x00")
 }
 
+func readFromBytes[T Unsigned](bs []byte, vs []T) {
+	buf := bytes.NewReader(bs)
+
+	err := binary.Read(buf, binary.LittleEndian, &vs)
+	if err != nil {
+		panic("binary.Read failed:" + err.Error())
+	}
+
+}
+
 func (bm *BinaryMatrix[T]) Code() string {
 	d := []byte{bm.Width, bm.Height}
 	d = append(d, castBTToBytes(bm.data)...)
 
 	return base64.RawStdEncoding.EncodeToString(d)
+}
+
+func (bm *BinaryMatrix[T]) Hash() string {
+	d := []byte{bm.Width, bm.Height}
+	d = append(d, castBTToBytes(bm.data)...)
+
+	return base64.RawStdEncoding.EncodeToString(d)
+}
+
+func (bm *BinaryMatrix[T]) String() string {
+	sb := strings.Builder{}
+	sb.Grow((int(bm.Height) * int(bm.Width)) + int(bm.Height))
+	for y := uint8(0); y < bm.Height; y++ {
+		for x := uint8(0); x < bm.Width; x++ {
+
+			if bm.GetBit(x, y) {
+				sb.WriteRune('0')
+			} else {
+				sb.WriteRune('_')
+			}
+		}
+		sb.WriteRune('\n')
+	}
+	return sb.String()
+}
+
+func (bm *BinaryMatrix[T]) Dup() *BinaryMatrix[T] {
+	d := []T{}
+	copy(d, bm.data)
+	return &BinaryMatrix[T]{Width: bm.Width, Height: bm.Height, binarySize: bm.binarySize, data: d}
+}
+func (bm *BinaryMatrix[T]) Rot90() *BinaryMatrix[T] {
+	bmr := New[T](bm.Width, bm.Height)
+	for y := uint8(0); y < bm.Height; y++ {
+		for x := uint8(0); x < bm.Width; x++ {
+			if bm.GetBit(x, y) {
+				bmr.SetBit(bmr.Width-y-1, x, true)
+			}
+		}
+	}
+
+	return bmr
+}
+
+func (bm *BinaryMatrix[T]) Crop() *BinaryMatrix[T] {
+
+	work := true
+	for work {
+		work = false
+		xShift := true
+		yShift := true
+		for x := uint8(0); x < bm.Width; x++ {
+			yShift = !bm.GetBit(x, 0) && yShift
+		}
+
+		for y := uint8(0); y < bm.Height; y++ {
+			xShift = !bm.GetBit(0, y) && xShift
+		}
+
+		if yShift {
+			nbm := New[T](bm.Height, bm.Width)
+			for y := uint8(1); y < nbm.Height; y++ {
+				for x := uint8(0); x < nbm.Width; x++ {
+					nbm.SetBit(x, y-1, bm.GetBit(x, y))
+				}
+			}
+			bm = nbm
+			work = true
+		}
+
+		if xShift {
+			nbm := New[T](bm.Height, bm.Width)
+			for y := uint8(0); y < nbm.Height; y++ {
+				for x := uint8(1); x < nbm.Width; x++ {
+					nbm.SetBit(x-1, y, bm.GetBit(x, y))
+				}
+			}
+			bm = nbm
+			work = true
+		}
+
+	}
+
+	return bm
+}
+
+func Load[T Unsigned](n uint8, s string) *BinaryMatrix[T] {
+	bm := New[T](n, n)
+	db, _ := base64.RawStdEncoding.DecodeString(s)
+	sz := int(db[0] * db[1])
+	db = append(db, make([]byte, sz-len(db[2:]))...)
+	readFromBytes(db[2:], bm.data)
+	return bm
 }
