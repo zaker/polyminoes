@@ -101,6 +101,24 @@ func (p Polymino) StrideCount() *big.Int {
 
 }
 
+func (p Polymino) StrideCount2() *big.Int {
+	z := &big.Int{}
+	height := len(p)
+	width := len(p[0])
+	matrixSize := (width * height)
+
+	for i := 0; i < matrixSize; i++ {
+		y, x := i/width, i%width
+		var b uint = 0
+		if p[y][x] {
+			b = 1
+		}
+		z = z.SetBit(z, i, b)
+	}
+	return z
+
+}
+
 func LoadPolymino(n uint, s string) Polymino {
 	p := New(n)
 	z := big.NewInt(0)
@@ -132,7 +150,7 @@ func (p Polymino) Rot90() Polymino {
 		}
 	}
 	for y, l := range np {
-		np[y] = ReverseBytes(l)
+		np[y] = ReverseBools(l)
 	}
 
 	moreWork := true
@@ -182,7 +200,7 @@ func ReverseString(s string) string {
 	return string(buf)
 }
 
-func ReverseBytes(b []bool) []bool {
+func ReverseBools(b []bool) []bool {
 	size := len(b) - 1
 	buf := make([]bool, size+1)
 	for start := 0; start <= size; start++ {
@@ -233,7 +251,5 @@ func (p Polymino) ExpandPolymino(expPoly map[string]Polymino) {
 			}
 		}
 	}
-
 	return
-
 }

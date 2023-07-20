@@ -1,31 +1,24 @@
 package polymino
 
 import (
-	"math/big"
-	"reflect"
 	"testing"
 )
 
 func TestPolymino_StrideCount(t *testing.T) {
 	tests := []struct {
 		name string
-		p    Polymino
-		want *big.Int
+		size uint
 	}{
-		{"1B", func() Polymino {
-			p := New(4)
-			p[0][0] = true
-			return p
-		}(), func() *big.Int {
-			z := &big.Int{}
-			z.SetString("1B", 62)
-			return z
-		}()},
+		{"7", 3},
+		{"1B", 4},
+		{"S", 4},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.p.StrideCount(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Polymino.StrideCount() = %v, want %v", got, tt.want)
+			p := LoadPolymino(tt.size, tt.name)
+
+			if p.StrideCount().Cmp(p.StrideCount2()) != 0 {
+				t.Errorf("Polymino.StrideCount() = %v, want %v", p.StrideCount().Text(62), p.StrideCount2().Text(62))
 			}
 		})
 	}

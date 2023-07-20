@@ -9,7 +9,7 @@ import (
 	"runtime/pprof"
 	"time"
 
-	"github.com/zaker/polyminos/polymino"
+	"github.com/zaker/polyminoes/polymino"
 )
 
 func (g Generator) GeneratePolyminoes(n uint) map[string]polymino.Polymino {
@@ -105,25 +105,25 @@ func main() {
 	f, _ := os.Create("polyminoes.pprof")
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
-	startTime := time.Now()
-	polyminoes := g.GeneratePolyminoes((uint)(15))
+	// startTime := time.Now()
+	// polyminoes := g.GeneratePolyminoes((uint)(6))
 	// for k, p := range polyminoes {
 	// 	fmt.Print(k, "\n", p)
 	// 	fmt.Println("--------------")
 	// }
-	fmt.Println(len(polyminoes), time.Since(startTime))
+	// fmt.Println(len(polyminoes), time.Since(startTime))
 
-	// for i := 1; i < 14; i++ {
-	// 	fmt.Println("Polyminos:", i)
-	// 	fmt.Println("--------------")
-	// 	startTime := time.Now()
-	// 	polyminoes := g.GeneratePolyminoes((uint)(i))
-	// 	// for k, p := range polyminoes {
-	// 	// 	fmt.Print(k, "\n", p)
-	// 	// 	fmt.Println("--------------")
-	// 	// }
-	// 	fmt.Println(len(polyminoes), time.Since(startTime))
-	// 	g.StoreCache(i, polyminoes)
-	// }
+	for i := 1; i < 15; i++ {
+		fmt.Println("Polyminos:", i)
+		fmt.Println("--------------")
+		startTime := time.Now()
+		polyminoes := g.GeneratePolyminoes((uint)(i))
+		// for k, p := range polyminoes {
+		// 	fmt.Print(k, "\n", p)
+		// 	fmt.Println("--------------")
+		// }
+		fmt.Println(len(polyminoes), time.Since(startTime))
+		// g.StoreCache(i, polyminoes)
+	}
 
 }
