@@ -74,10 +74,24 @@ func (bm *BinaryMatrix[T]) SetBit(x, y uint8, b bool) error {
 
 func (bm *BinaryMatrix[T]) GetBit(x, y uint8) bool {
 
+	bs := bm.binarySize
 	o := (y*bm.Width + x)
-	i := (int)(o / bm.binarySize)
-	m := (T)(1 << (o % bm.binarySize))
+	i := (int)(o / bs)
+	m := (T)(1 << (o % bs))
 	c := bm.data[i]&(m) > 0
+	return c
+}
+
+func (bm *BinaryMatrix[T]) Value() uint8 {
+
+	var c uint8 = 0
+	for y := uint8(0); y < bm.Height; y++ {
+		for x := uint8(0); x < bm.Width; x++ {
+			if bm.GetBit(x, y) {
+				c++
+			}
+		}
+	}
 	return c
 }
 
@@ -158,18 +172,23 @@ func (bm *BinaryMatrix[T]) Dup() *BinaryMatrix[T] {
 }
 func (bm *BinaryMatrix[T]) Rot90() *BinaryMatrix[T] {
 	bmr := New[T](bm.Width, bm.Height)
+	cnt := 1
 	for y := uint8(0); y < bm.Height; y++ {
 		for x := uint8(0); x < bm.Width; x++ {
 			if bm.GetBit(x, y) {
 				bmr.SetBit(bmr.Width-y-1, x, true)
+				cnt++
+			}
+			if cnt > int(bmr.Width) {
+				goto end
 			}
 		}
 	}
-
+end:
 	return bmr
 }
 
-func (bm *BinaryMatrix[T]) Crop() *BinaryMatrix[T] {
+func (bm *BinaryMatrix[T]) Crop(n uint8) *BinaryMatrix[T] {
 
 	work := true
 	for work {
@@ -185,10 +204,17 @@ func (bm *BinaryMatrix[T]) Crop() *BinaryMatrix[T] {
 		}
 
 		if yShift {
+			yc := uint8(0)
 			nbm := New[T](bm.Height, bm.Width)
 			for y := uint8(1); y < nbm.Height; y++ {
+				if yc >= n {
+					break
+				}
 				for x := uint8(0); x < nbm.Width; x++ {
-					nbm.SetBit(x, y-1, bm.GetBit(x, y))
+					if bm.GetBit(x, y) {
+						nbm.SetBit(x, y-1, true)
+						yc++
+					}
 				}
 			}
 			bm = nbm
@@ -196,10 +222,18 @@ func (bm *BinaryMatrix[T]) Crop() *BinaryMatrix[T] {
 		}
 
 		if xShift {
+			xc := uint8(0)
 			nbm := New[T](bm.Height, bm.Width)
 			for y := uint8(0); y < nbm.Height; y++ {
+				if xc >= n {
+					break
+				}
 				for x := uint8(1); x < nbm.Width; x++ {
-					nbm.SetBit(x-1, y, bm.GetBit(x, y))
+					if bm.GetBit(x, y) {
+						nbm.SetBit(x-1, y, true)
+						xc++
+					}
+
 				}
 			}
 			bm = nbm
