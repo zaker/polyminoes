@@ -19,6 +19,10 @@ func (p Polymino) Hash() string {
 	return p.array2d.Hash()
 }
 
+func (p Polymino) Value() uint8 {
+	return p.array2d.Value()
+}
+
 func (p Polymino) SetBit(x, y uint8, b bool) {
 	p.array2d.SetBit(x, y, b)
 }
@@ -38,9 +42,9 @@ func Load(n uint8, s string) Polymino {
 func (p *Polymino) SetToMinRotation() {
 	minRot := p.array2d
 
-	rot1 := minRot.Rot90().Crop()
-	rot2 := rot1.Rot90().Crop()
-	rot3 := rot2.Rot90().Crop()
+	rot1 := minRot.Rot90().Crop(p.Size)
+	rot2 := rot1.Rot90().Crop(p.Size)
+	rot3 := rot2.Rot90().Crop(p.Size)
 	if rot1.Less(minRot) {
 		minRot = rot1
 	}
@@ -85,65 +89,56 @@ func (p Polymino) Expand(expPoly map[string]string) {
 		x := uint8(i % int(p.Size))
 		y := uint8(i / int(p.Size))
 		last := p.Size - 1
+		curBit := p.array2d.GetBit(x, y)
 		// U
-		if y == 0 && p.array2d.GetBit(x, y) {
+		if y == 0 && curBit {
 			np := New(p.Size + 1)
 			np.SetBit(x, y, true)
 			np.blit(p, 0, 1)
-
-			// fmt.Println("UO\n", np)
 			expansions = append(expansions, np)
-		} else if y > 0 && p.array2d.GetBit(x, y) && !p.array2d.GetBit(x, y-1) {
+		} else if y > 0 && curBit && !p.array2d.GetBit(x, y-1) {
 			np := New(p.Size + 1)
-			np.SetBit(x, y, true)
+			np.SetBit(x, y-1, true)
 			np.blit(p, 0, 0)
-			// fmt.Println("U\n", np)
 			expansions = append(expansions, np)
 		}
 
 		// L
-		if x == 0 && p.array2d.GetBit(x, y) {
+		if x == 0 && curBit {
 			np := New(p.Size + 1)
 			np.SetBit(x, y, true)
 			np.blit(p, 1, 0)
-			// fmt.Println("LO\n", np)
 			expansions = append(expansions, np)
-		} else if x > 0 && p.array2d.GetBit(x, y) && !p.array2d.GetBit(x-1, y) {
+		} else if x > 0 && curBit && !p.array2d.GetBit(x-1, y) {
 			np := New(p.Size + 1)
-			np.SetBit(x, y, true)
+			np.SetBit(x-1, y, true)
 			np.blit(p, 0, 0)
-			// fmt.Println("L\n", np)
 			expansions = append(expansions, np)
 		}
 
 		// D
-		if y == last && p.array2d.GetBit(x, y) {
+		if y == last && curBit {
 			np := New(p.Size + 1)
 			np.SetBit(x, y+1, true)
 			np.blit(p, 0, 0)
-			// fmt.Println("DO\n", np)
 			expansions = append(expansions, np)
-		} else if y < last && p.array2d.GetBit(x, y) && !p.array2d.GetBit(x, y+1) {
+		} else if y < last && curBit && !p.array2d.GetBit(x, y+1) {
 			np := New(p.Size + 1)
 			np.SetBit(x, y+1, true)
 			np.blit(p, 0, 0)
-			// fmt.Println("D\n", np)
 			expansions = append(expansions, np)
 		}
 
 		// R
-		if x == last && p.array2d.GetBit(x, y) {
+		if x == last && curBit {
 			np := New(p.Size + 1)
 			np.SetBit(x+1, y, true)
 			np.blit(p, 0, 0)
-			// fmt.Println("RO\n", np)
 			expansions = append(expansions, np)
-		} else if x < last && p.array2d.GetBit(x, y) && !p.array2d.GetBit(x+1, y) {
+		} else if x < last && curBit && !p.array2d.GetBit(x+1, y) {
 			np := New(p.Size + 1)
 			np.SetBit(x+1, y, true)
 			np.blit(p, 0, 0)
-
-			// fmt.Println("R\n", np)
 			expansions = append(expansions, np)
 		}
 
