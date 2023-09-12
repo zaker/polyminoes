@@ -6,7 +6,7 @@ import (
 
 type Polymino struct {
 	Size    uint8
-	array2d *binarymatrix.BinaryMatrix[uint8]
+	array2d *binarymatrix.BinaryMatrix[uint32]
 }
 
 func (p Polymino) String() string {
@@ -35,7 +35,7 @@ func (p Polymino) Dup() Polymino {
 func Load(n uint8, s string) Polymino {
 	p := New(n)
 
-	p.array2d = binarymatrix.Load[uint8](n, s)
+	p.array2d = binarymatrix.Load[uint32](n, s)
 	return p
 }
 
@@ -60,7 +60,7 @@ func (p *Polymino) SetToMinRotation() {
 }
 
 func New(n uint8) Polymino {
-	return Polymino{n, binarymatrix.New[uint8](n, n)}
+	return Polymino{n, binarymatrix.New[uint32](n, n)}
 }
 
 func (p *Polymino) blit(op Polymino, xOffsett, yOffset uint8) {

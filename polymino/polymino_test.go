@@ -17,6 +17,11 @@ func TestPolymino_Expand(t *testing.T) {
 		fmt.Println("-4-")
 
 	}
+
+	p2 := Load(2, "AgID")
+	if !p2.array2d.GetBit(0, 0) && !p2.array2d.GetBit(1, 0) {
+		t.Errorf("Not a valid p2")
+	}
 }
 
 func TestPolymino_SetToMinRotation(t *testing.T) {

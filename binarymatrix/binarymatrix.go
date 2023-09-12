@@ -190,59 +190,39 @@ end:
 
 func (bm *BinaryMatrix[T]) Crop(n uint8) *BinaryMatrix[T] {
 
-	work := true
-	for work {
-		work = false
-		xShift := true
-		yShift := true
-		for x := uint8(0); x < bm.Width; x++ {
-			yShift = !bm.GetBit(x, 0) && yShift
-		}
+	hits := make([]struct{ x, y uint8 }, 0, n)
+	c := uint8(0)
+	minX, minY := n, n
+	for y := uint8(0); y < bm.Height && c < n; y++ {
+		for x := uint8(0); x < bm.Width && c < n; x++ {
+			if bm.GetBit(x, y) {
+				hits = append(hits, struct {
+					x uint8
+					y uint8
+				}{x, y})
 
-		for y := uint8(0); y < bm.Height; y++ {
-			xShift = !bm.GetBit(0, y) && xShift
-		}
+				if x < minX {
+					minX = x
+				}
+				if y < minY {
+					minY = y
+				}
 
-		if yShift {
-			yc := uint8(0)
-			nbm := New[T](bm.Height, bm.Width)
-			for y := uint8(1); y < nbm.Height; y++ {
-				if yc >= n {
-					break
-				}
-				for x := uint8(0); x < nbm.Width; x++ {
-					if bm.GetBit(x, y) {
-						nbm.SetBit(x, y-1, true)
-						yc++
-					}
-				}
+				c++
 			}
-			bm = nbm
-			work = true
 		}
-
-		if xShift {
-			xc := uint8(0)
-			nbm := New[T](bm.Height, bm.Width)
-			for y := uint8(0); y < nbm.Height; y++ {
-				if xc >= n {
-					break
-				}
-				for x := uint8(1); x < nbm.Width; x++ {
-					if bm.GetBit(x, y) {
-						nbm.SetBit(x-1, y, true)
-						xc++
-					}
-
-				}
-			}
-			bm = nbm
-			work = true
-		}
-
 	}
 
-	return bm
+	if minX == 0 && minY == 0 {
+		return bm
+	}
+
+	nbm := New[T](bm.Height, bm.Width)
+	for i := range hits {
+
+		nbm.SetBit(hits[i].x-minX, hits[i].y-minY, true)
+	}
+	return nbm
 }
 
 func Load[T Unsigned](n uint8, s string) *BinaryMatrix[T] {

@@ -16,7 +16,7 @@ func main() {
 	f, _ := os.Create("polyminoes.pprof")
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
-	n := 11
+	n := 14
 	startTime := time.Now()
 	polyminoes := g.GeneratePolyminoes((uint8)(n))
 	// for k, p := range polyminoes {
